@@ -3,6 +3,8 @@ package mango
 import (
 	"context"
 	"testing"
+
+	"gopkg.in/mgo.v2/bson"
 )
 
 type testuser struct {
@@ -66,6 +68,12 @@ func TestMongo(t *testing.T) {
 	err = ses.DeleteSingle(c, 1)
 	if err != nil {
 		t.Errorf("Error deleting doc: %s", err.Error())
+		t.FailNow()
+	}
+
+	_, err = c.Find(context.Background(), bson.M{})
+	if err != nil {
+		t.Errorf("Error finding docs: %s", err.Error())
 		t.FailNow()
 	}
 }
