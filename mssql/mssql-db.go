@@ -88,7 +88,8 @@ func initdb(config DbConfig, connName string) *sql.DB {
 	}
 	//log=1 log errors
 	connString = fmt.Sprintf("server=%s%s;user id=%s;password=%s;database=%s%s;log=1", config.DbHost, port, config.DbUser, config.DbPwd, config.DbName, tout)
-	conn, err := sql.Open("mssql", connString)
+	//conn, err := sql.Open("mssql", connString)
+	conn, err := sql.Open("sqlserver", connString)
 	if err != nil {
 		panic(fmt.Sprintf("mssql connection failed [%s]: %s", connName, err.Error()))
 	}
