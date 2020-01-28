@@ -93,5 +93,9 @@ func initdb(config DbConfig, connName string) *sql.DB {
 	if err != nil {
 		panic(fmt.Sprintf("mssql connection failed [%s]: %s", connName, err.Error()))
 	}
+	err = conn.Ping()
+	if err != nil {
+		panic(fmt.Sprintf("ping to mssql connection failed [%s]: %s", connName, err.Error()))
+	}
 	return conn
 }
