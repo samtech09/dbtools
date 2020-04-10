@@ -36,7 +36,8 @@ type DbConfig struct {
 	//if could not connect to server in given time then giveup and raise error
 	DbTimeout int
 	//DbSSLMode flag to enable disable SSL for database connection
-	DbSSLMode string
+	DbSSLMode  string
+	DbPoolSize uint16
 }
 
 //InitDbPool Initialize database connection ppol for PostgreSQL database
@@ -83,8 +84,8 @@ func initdb(config DbConfig, connName string) *pgxpool.Pool {
 	if config.DbPort < 1 {
 		config.DbPort = 5432
 	}
-	connString := fmt.Sprintf("postgresql://%s:%s@%s:%d/%s?connect_timeout=%d&sslmode=%s",
-		config.DbUser, config.DbPwd, config.DbHost, config.DbPort, config.DbName, config.DbTimeout, config.DbSSLMode)
+	connString := fmt.Sprintf("postgresql://%s:%s@%s:%d/%s?connect_timeout=%d&sslmode=%s&pool_max_conns=%d",
+		config.DbUser, config.DbPwd, config.DbHost, config.DbPort, config.DbName, config.DbTimeout, config.DbSSLMode, config.DbPoolSize)
 
 	cfg, err := pgxpool.ParseConfig(connString)
 	if err != nil {
