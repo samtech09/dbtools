@@ -4,25 +4,24 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/jackc/pgx/v4/pgxpool"
-	"github.com/rs/zerolog"
+	"github.com/jackc/pgx/v4"
 )
 
 //DB holds database connection pools
 type DB struct {
 	//Reader is readonly connection to database
-	reader *pgxpool.Pool
+	reader DbConfig
 
 	//Writer is read/write connection to database
-	writer *pgxpool.Pool
+	writer DbConfig
 }
 
 //Conn provide reader or writer connection as per readonly state
-func (db *DB) Conn(readonly bool) *pgxpool.Pool {
+func (db *DB) Conn(readonly bool) *pgx.Conn {
 	if readonly {
-		return db.reader
+		return getDbConn(db.reader, "sql-reader")
 	}
-	return db.writer
+	return getDbConn(db.writer, "sql-writer")
 }
 
 //DbConfig is config for disk persistent database (PostgreSQL)
@@ -40,61 +39,53 @@ type DbConfig struct {
 	DbPoolSize uint16
 }
 
-//InitDbPool Initialize database connection ppol for PostgreSQL database
+//InitDb Initialize database connection and mke sure database is reachable
 // Conection Options: https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING
-func InitDbPool(reader, writer DbConfig) *DB {
+func InitDb(reader, writer DbConfig) *DB {
 	db := DB{}
 	if reader.DbHost != "" {
-		db.reader = initdb(reader, "sql-reader")
+		c := getDbConn(reader, "sql-reader")
+		defer c.Close(context.Background())
+		err := c.Ping(context.Background())
+		if err != nil {
+			panic(fmt.Sprintf("pgsql connection PING failed [%s]: %s", "sql-reader", err.Error()))
+		}
 	}
 	if writer.DbHost != "" {
-		db.writer = initdb(writer, "sql-writer")
+		c := getDbConn(writer, "sql-writer")
+		defer c.Close(context.Background())
+		err := c.Ping(context.Background())
+		if err != nil {
+			panic(fmt.Sprintf("pgsql connection PING failed [%s]: %s", "sql-writer", err.Error()))
+		}
 	}
-
+	db.reader = reader
+	db.writer = writer
 	return &db
 }
 
-//CloseDbPool close database connection. Not necessary to call, as pool itself closes inactive connections.
-func (db *DB) CloseDbPool() {
-	if db.reader != nil {
-		db.reader.Close()
-	}
-	if db.writer != nil {
-		db.writer.Close()
-	}
-}
-
-//SetLogger set zerolog logger for logging database events
-func SetLogger(l zerolog.Logger) {
-	// not implemented
-
-	//cfg.LogLevel = pgx.LogLevelWarn
-	//cfg.Logger = newLogger(l, connName)
-
-	// pgxConnPoolConfig := pgxpool.Config{
-	// 	ConnConfig:   cfg,
-	// 	MaxConns:     8,
-	// 	AfterConnect: nil,
-	// }
-}
-
-func initdb(config DbConfig, connName string) *pgxpool.Pool {
+func getDbConn(config DbConfig, connName string) *pgx.Conn {
 	var err error
 
 	if config.DbPort < 1 {
 		config.DbPort = 5432
 	}
-	connString := fmt.Sprintf("postgresql://%s:%s@%s:%d/%s?connect_timeout=%d&sslmode=%s&pool_max_conns=%d",
-		config.DbUser, config.DbPwd, config.DbHost, config.DbPort, config.DbName, config.DbTimeout, config.DbSSLMode, config.DbPoolSize)
 
-	cfg, err := pgxpool.ParseConfig(connString)
+	connString := fmt.Sprintf("postgresql://%s:%s@%s:%d/%s?connect_timeout=%d&sslmode=%s",
+		config.DbUser, config.DbPwd, config.DbHost, config.DbPort, config.DbName, config.DbTimeout, config.DbSSLMode)
+
+	cfg, err := pgx.ParseConfig(connString)
 	if err != nil {
 		panic(fmt.Sprintf("pgsql connection parse error [%s]: %s", connName, err.Error()))
 	}
 
-	p, err := pgxpool.ConnectConfig(context.Background(), cfg)
+	if config.DbPoolSize > 0 {
+		cfg.PreferSimpleProtocol = true
+	}
+
+	c, err := pgx.ConnectConfig(context.Background(), cfg)
 	if err != nil {
 		panic(fmt.Sprintf("pgsql connection failed [%s]: %s", connName, err.Error()))
 	}
-	return p
+	return c
 }
