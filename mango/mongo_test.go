@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	bf "github.com/samtech09/dbtools/mango/bsonfilter"
+	bf "github.com/samtech09/bsonquery"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
