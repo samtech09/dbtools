@@ -89,3 +89,11 @@ func getDbConn(config DbConfig, connName string) *pgx.Conn {
 	}
 	return c
 }
+
+func BulkCopy(cntxt context.Context, conn *pgx.Conn, targetTable string, columns []string, rows [][]interface{}) (int64, error) {
+	return conn.CopyFrom(cntxt,
+		pgx.Identifier{targetTable},
+		columns,
+		pgx.CopyFromRows(rows),
+	)
+}
