@@ -24,6 +24,14 @@ func (db *DB) Conn(readonly bool) *pgx.Conn {
 	return getDbConn(db.writer, "sql-writer")
 }
 
+func (db *DB) BulkCopy(cntxt context.Context, conn *pgx.Conn, targetTable string, columns []string, rows [][]interface{}) (int64, error) {
+	return conn.CopyFrom(cntxt,
+		pgx.Identifier{targetTable},
+		columns,
+		pgx.CopyFromRows(rows),
+	)
+}
+
 //DbConfig is config for disk persistent database (PostgreSQL)
 type DbConfig struct {
 	DbHost string
@@ -88,12 +96,4 @@ func getDbConn(config DbConfig, connName string) *pgx.Conn {
 		panic(fmt.Sprintf("pgsql connection failed [%s]: %s", connName, err.Error()))
 	}
 	return c
-}
-
-func BulkCopy(cntxt context.Context, conn *pgx.Conn, targetTable string, columns []string, rows [][]interface{}) (int64, error) {
-	return conn.CopyFrom(cntxt,
-		pgx.Identifier{targetTable},
-		columns,
-		pgx.CopyFromRows(rows),
-	)
 }
