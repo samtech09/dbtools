@@ -3,6 +3,7 @@ package pgsql
 import (
 	"context"
 	"fmt"
+	"net/url"
 
 	"github.com/jackc/pgx/v4"
 )
@@ -80,7 +81,7 @@ func getDbConn(config DbConfig, connName string) *pgx.Conn {
 	}
 
 	connString := fmt.Sprintf("postgresql://%s:%s@%s:%d/%s?connect_timeout=%d&sslmode=%s&statement_cache_mode=describe",
-		config.DbUser, config.DbPwd, config.DbHost, config.DbPort, config.DbName, config.DbTimeout, config.DbSSLMode)
+		config.DbUser, url.QueryEscape(config.DbPwd), config.DbHost, config.DbPort, config.DbName, config.DbTimeout, config.DbSSLMode)
 
 	cfg, err := pgx.ParseConfig(connString)
 	if err != nil {
