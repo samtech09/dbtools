@@ -3,6 +3,7 @@ package pgpool
 import (
 	"context"
 	"fmt"
+	"net/url"
 
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/rs/zerolog"
@@ -85,7 +86,7 @@ func initdb(config DbConfig, connName string) *pgxpool.Pool {
 		config.DbPort = 5432
 	}
 	connString := fmt.Sprintf("postgresql://%s:%s@%s:%d/%s?connect_timeout=%d&sslmode=%s&pool_max_conns=%d",
-		config.DbUser, config.DbPwd, config.DbHost, config.DbPort, config.DbName, config.DbTimeout, config.DbSSLMode, config.DbPoolSize)
+		config.DbUser, url.QueryEscape(config.DbPwd), config.DbHost, config.DbPort, config.DbName, config.DbTimeout, config.DbSSLMode, config.DbPoolSize)
 
 	cfg, err := pgxpool.ParseConfig(connString)
 	if err != nil {
