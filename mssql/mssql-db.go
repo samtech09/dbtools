@@ -8,7 +8,7 @@ import (
 	"github.com/rs/zerolog"
 )
 
-//DB holds database connections
+// DB holds database connections
 type DB struct {
 	//Reader is readonly connection to database
 	reader *sql.DB
@@ -17,7 +17,7 @@ type DB struct {
 	writer *sql.DB
 }
 
-//Conn provide reader or writer connection as per readonly state
+// Conn provide reader or writer connection as per readonly state
 func (db *DB) Conn(readonly bool) *sql.DB {
 	if readonly {
 		return db.reader
@@ -25,7 +25,7 @@ func (db *DB) Conn(readonly bool) *sql.DB {
 	return db.writer
 }
 
-//DbConfig is config for disk persistent database
+// DbConfig is config for disk persistent database
 type DbConfig struct {
 	DbHost string
 	DbPort uint16
@@ -35,9 +35,11 @@ type DbConfig struct {
 	//DbTimeout is Connection timeout in seconds
 	//if could not connect to server in given time then giveup and raise error
 	DbTimeout int
+	//DbSSLMode flag to enable disable SSL for database connection
+	DbSSLMode string
 }
 
-//InitDbPool Initialize database connection ppol for PostgreSQL database
+// InitDbPool Initialize database connection ppol for PostgreSQL database
 func InitDbPool(reader, writer DbConfig) *DB {
 	db := DB{}
 	if reader.DbHost != "" {
@@ -50,7 +52,7 @@ func InitDbPool(reader, writer DbConfig) *DB {
 	return &db
 }
 
-//CloseDbPool close database connection. Must be called to release connections before exiting from client.
+// CloseDbPool close database connection. Must be called to release connections before exiting from client.
 func (db *DB) CloseDbPool() {
 	if db.reader != nil {
 		db.reader.Close()
@@ -60,7 +62,7 @@ func (db *DB) CloseDbPool() {
 	}
 }
 
-//SetLogger set zerolog logger for logging database events
+// SetLogger set zerolog logger for logging database events
 func SetLogger(l zerolog.Logger) {
 	// not implemented
 
@@ -86,8 +88,11 @@ func initdb(config DbConfig, connName string) *sql.DB {
 	if config.DbPort > 0 {
 		port = fmt.Sprintf(";port=%d", config.DbPort)
 	}
-	//log=1 log errors
+	//log=1 log
 	connString = fmt.Sprintf("server=%s%s;user id=%s;password=%s;database=%s%s;log=1", config.DbHost, port, config.DbUser, config.DbPwd, config.DbName, tout)
+	if config.DbSSLMode == "disable" {
+		connString = connString + ";encrypt=disable"
+	}
 	//conn, err := sql.Open("mssql", connString)
 	conn, err := sql.Open("sqlserver", connString)
 	if err != nil {

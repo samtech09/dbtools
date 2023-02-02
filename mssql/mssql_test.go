@@ -9,7 +9,7 @@ import (
 var db *DB
 
 func TestConnection(t *testing.T) {
-	cfg := DbConfig{"172.25.12.203", 0, "testdb", "testuser", "testuser", 30}
+	cfg := DbConfig{"172.25.12.203", 0, "testdb", "testuser", "testuser", 30, "disable"}
 	db = InitDbPool(cfg, cfg)
 
 	fmt.Println("no panic! connection suceeded")
